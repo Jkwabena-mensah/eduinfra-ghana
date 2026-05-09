@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Streamlit secrets — NEVER commit this
+.streamlit/secrets.toml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Data — large files not needed on GitHub
+# (keep CSVs since they're needed for the app)
+
+# Logs
+logs/*.log
+
+# Large data files — not needed for deployment
+data/hotosm_gha_education_facilities_points_geojson.geojson
+data/dhs/
+data/boundaries/
+*.geojson
+*.pkl
+models/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# Outputs
+outputs/*.csv
+outputs/*.pdf

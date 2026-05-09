@@ -1,0 +1,45 @@
+name: EduInfra Ghana CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Test pipeline import
+        run: python -c "from src.pipeline import EduInfraPipeline; print('Pipeline OK')"
+
+      - name: Test config import
+        run: python -c "from src.config import GhanaColors; print('Config OK')"
+
+      - name: Syntax check app.py
+        run: python -m py_compile app.py && echo "app.py syntax OK"
+
+      - name: CI success
+        run: echo "✅ EduInfra Ghana CI passed"

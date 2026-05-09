@@ -1,0 +1,8 @@
+[build]
+publish = "netlify"
+
+[[redirects]]
+from = "/app"
+to = "https://eduinfra-ghana.streamlit.app"
+status = 302
+force = true

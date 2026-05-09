@@ -1,0 +1,18 @@
+{
+  "report_title": "EduInfra Ghana — Pipeline Summary Report",
+  "dataset": {
+    "total_schools": 51,
+    "gps_coverage_pct": 96.1
+  },
+  "model_performance": {
+    "mae": "N/A",
+    "r_squared": "N/A",
+    "note": "MAE and R² reflect the Random-Forest gap-score predictor trained on MPI + literacy features."
+  },
+  "priority_distribution": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "STABLE": 51
+  },
+  "top_5_critical_schools": []
+}
