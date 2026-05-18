@@ -629,39 +629,38 @@ st.markdown(
       50%     {{ opacity: 0.65; }}
     }}
 
-
     /* ── Folium iframe UX ── */
-    iframe[title="streamlit_folium.st_folium"] {{
+    iframe[title="streamlit_folium.st_folium"] {
         border: none !important;
         border-radius: 10px;
         display: block;
-    }}
+    }
     /* ── Button hover lift ── */
-    .stButton > button {{ transition: all 0.18s ease !important; }}
-    .stButton > button:hover {{
+    .stButton > button { transition: all 0.18s ease !important; }
+    .stButton > button:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 16px rgba(252,209,22,0.25) !important;
-    }}
+    }
     /* ── Chat input polish ── */
-    [data-testid="stChatInput"] textarea {{
+    [data-testid="stChatInput"] textarea {
         border-radius: 20px !important;
         border: 1px solid rgba(252,209,22,0.3) !important;
         background: rgba(22,27,34,0.8) !important;
         color: #E6EDF3 !important;
         font-size: 0.88rem !important;
-    }}
-    [data-testid="stChatInput"] textarea:focus {{
+    }
+    [data-testid="stChatInput"] textarea:focus {
         border-color: rgba(252,209,22,0.7) !important;
         box-shadow: 0 0 0 2px rgba(252,209,22,0.15) !important;
-    }}
+    }
     /* ── Multiselect tag gold ── */
-    [data-baseweb="tag"] {{
+    [data-baseweb="tag"] {
         background: rgba(252,209,22,0.15) !important;
         border: 1px solid rgba(252,209,22,0.4) !important;
         color: #FCD116 !important;
         font-weight: 600 !important;
         border-radius: 20px !important;
-    }}
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -1292,25 +1291,11 @@ with tab_map:
         location=_map_center,
         zoom_start=_map_zoom,
         tiles="CartoDB dark_matter",
-        max_bounds=False,
+        max_bounds=True,
         min_zoom=6,
-        max_zoom=18,
-        prefer_canvas=True,
-        zoom_snap=0.25,
-        zoom_delta=0.5,
-        scroll_wheel_zoom=True,
-        double_click_zoom=True,
-        dragging=True,
-        inertia=True,
-        inertia_deceleration=3000,
-        inertia_max_speed=2000,
-        keyboard=True,
-        keyboard_pan_offset=120,
-        tap=False,
-        world_copy_jump=True,
     )
     if not _fly:
-        m.fit_bounds([[4.5, -3.4], [11.3, 1.3]])
+        m.fit_bounds([[4.5, -3.4], [11.3, 1.3]])  # tighter Ghana bbox — fills the frame
     Fullscreen().add_to(m)
 
     # ── Progressive Disclosure zoom threshold ──────────────────────────────
@@ -1812,22 +1797,7 @@ with tab_cluster:
 
             # ── Cluster map ──
             with col_map:
-                cm = folium.Map(
-                    location=[7.9465, -1.0232],
-                    zoom_start=7,
-                    tiles="CartoDB dark_matter",
-                    max_bounds=False,
-                    min_zoom=6,
-                    max_zoom=18,
-                    prefer_canvas=True,
-                    zoom_snap=0.25,
-                    zoom_delta=0.5,
-                    dragging=True,
-                    inertia=True,
-                    inertia_deceleration=3000,
-                    inertia_max_speed=2000,
-                    world_copy_jump=True,
-                )
+                cm = folium.Map(location=[7.9465, -1.0232], zoom_start=7, tiles="CartoDB dark_matter", max_bounds=True, min_zoom=6)
                 cm.fit_bounds([[4.5, -3.4], [11.3, 1.3]])
                 Fullscreen().add_to(cm)
 
