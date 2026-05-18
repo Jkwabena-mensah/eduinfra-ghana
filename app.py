@@ -607,6 +607,36 @@ st.markdown(
       .masthead p    {{ font-size: 0.72rem; letter-spacing: 0.8px; }}
       .section-header {{ font-size: 0.9rem; }}
       .legend-chip   {{ font-size: 0.7rem; padding: 2px 9px; }}
+      /* ── Mobile: make tabs scroll horizontally instead of wrapping ── */
+      [data-testid="stTabs"] [role="tablist"] {{
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+      }}
+      [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar {{ display: none; }}
+      [data-testid="stTabs"] [role="tab"] {{
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        font-size: 0.75rem !important;
+        padding: 8px 12px !important;
+        letter-spacing: 0.1px !important;
+      }}
+      /* ── Mobile: tighten KPI cards to single column ── */
+      [data-testid="column"] {{
+        min-width: 140px;
+      }}
+      /* ── Mobile: reduce map height ── */
+      iframe[title="streamlit_folium.st_folium"] {{
+        height: 380px !important;
+        min-height: 340px !important;
+      }}
+      /* ── Mobile: cluster cards full width ── */
+      .cluster-card {{ margin-bottom: 8px; }}
+      /* ── Mobile: district rows compact ── */
+      .district-row .dr-bar-wrap {{ display: none; }}
     }}
 
     /* Narrow sidebar (≤ 768px) */
@@ -2041,10 +2071,42 @@ with tab_table:
         unsafe_allow_html=True,
     )
 
+    # ── District filter dropdown ─────────────────────────────────────────────
+    _t3_col1, _t3_col2, _t3_col3 = st.columns([2, 2, 3])
+    with _t3_col1:
+        _t3_district_opts = ["All Districts"]
+        if "district" in filtered_df.columns:
+            _t3_district_opts += sorted(filtered_df["district"].dropna().unique().tolist())
+        _t3_district = st.selectbox(
+            "🏙️ Filter by District",
+            options=_t3_district_opts,
+            key="t3_district_filter",
+        )
+    with _t3_col2:
+        _t3_tier_opts = ["All Tiers", "CRITICAL", "HIGH", "STABLE"]
+        _t3_tier = st.selectbox(
+            "🎯 Filter by Tier",
+            options=_t3_tier_opts,
+            key="t3_tier_filter",
+        )
+    with _t3_col3:
+        st.markdown("<br>", unsafe_allow_html=True)
+        _t3_total_label = f"{len(top_df)} schools in view"
+        if _t3_district != "All Districts" or _t3_tier != "All Tiers":
+            _t3_total_label += " (filtered)"
+        st.caption(_t3_total_label)
+
+    # Apply district + tier filters on top of the existing top_df
+    _table_df = top_df.copy()
+    if _t3_district != "All Districts" and "district" in _table_df.columns:
+        _table_df = _table_df[_table_df["district"] == _t3_district]
+    if _t3_tier != "All Tiers" and "priority_tier" in _table_df.columns:
+        _table_df = _table_df[_table_df["priority_tier"].str.upper() == _t3_tier]
+
     # Safe column selection
     desired_cols = ["school_name", "district", "region", "priority_score", "priority_tier"]
-    available_cols = [c for c in desired_cols if c in top_df.columns]
-    display_df = top_df[available_cols].copy()
+    available_cols = [c for c in desired_cols if c in _table_df.columns]
+    display_df = _table_df[available_cols].copy()
 
     if "priority_score" in display_df.columns:
         display_df["priority_score"] = (display_df["priority_score"] * 100).round(2)
@@ -2056,34 +2118,43 @@ with tab_table:
             "priority_tier":  "Tier",
         })
 
-    # Add colour-coded Tier column via pandas Styler (st.dataframe doesn't render HTML)
-    def _style_table(styler):
-        def _bg_tier(val):
-            v = str(val).upper()
-            if v == "CRITICAL": return "background-color:#5a0a10;color:#FF6B6B;font-weight:700;"
-            if v == "HIGH":     return "background-color:#4a3800;color:#FCD116;font-weight:700;"
-            return "background-color:#0a3320;color:#1D9E75;font-weight:700;"
-        if "Tier" in styler.columns:
-            styler = styler.map(_bg_tier, subset=["Tier"])
-        if "Priority Score (%)" in styler.columns:
-            styler = styler.background_gradient(subset=["Priority Score (%)"], cmap="YlOrRd")
-        return styler
+    if display_df.empty:
+        st.info("No schools match the selected filters. Try broadening the district or tier selection.")
+    else:
+        # Add colour-coded Tier column via pandas Styler
+        def _style_table(styler):
+            def _bg_tier(val):
+                v = str(val).upper()
+                if v == "CRITICAL": return "background-color:#5a0a10;color:#FF6B6B;font-weight:700;"
+                if v == "HIGH":     return "background-color:#4a3800;color:#FCD116;font-weight:700;"
+                return "background-color:#0a3320;color:#1D9E75;font-weight:700;"
+            if "Tier" in styler.columns:
+                styler = styler.map(_bg_tier, subset=["Tier"])
+            if "Priority Score (%)" in styler.columns:
+                styler = styler.background_gradient(subset=["Priority Score (%)"], cmap="YlOrRd")
+            return styler
 
-    st.dataframe(
-        display_df.style.pipe(_style_table),
-        use_container_width=True,
-        height=560,
-    )
-
-    col_dl, _ = st.columns([1, 3])
-    with col_dl:
-        csv_bytes = display_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="⬇️ Download as CSV",
-            data=csv_bytes,
-            file_name=f"eduinfra_priority_{selected_region.replace(' ','_').lower()}.csv",
-            mime="text/csv",
+        _t3_n = len(display_df)
+        st.dataframe(
+            display_df.style.pipe(_style_table),
+            use_container_width=True,
+            height=min(560, 40 + _t3_n * 36),
         )
+
+        col_dl, _ = st.columns([1, 3])
+        with col_dl:
+            _fname_suffix = (
+                _t3_district.replace(" ", "_").lower()
+                if _t3_district != "All Districts"
+                else selected_region.replace(" ", "_").lower()
+            )
+            csv_bytes = display_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label=f"⬇️ Download {_t3_n} schools (CSV)",
+                data=csv_bytes,
+                file_name=f"eduinfra_priority_{_fname_suffix}.csv",
+                mime="text/csv",
+            )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -2544,12 +2615,24 @@ with tab_sim:
 
         _grad_df = _result_df[_result_df["tier_before"] != _result_df["tier_after"]].copy()
 
+        # ── Add estimated cost column to ALL schools (not just graduates) ──
+        _cost_per_school = (
+            (_COST_SOLAR    if _do_elec  else 0) +
+            (_COST_WATER    if _do_water else 0) +
+            (_COST_SANIT    if _do_sanit else 0)
+        )
+        _result_df["est_cost_ghc"] = _cost_per_school
+        _result_df["est_cost_usd"] = (_cost_per_school / 14).round(0).astype(int)
+
         if _grad_df.empty:
             st.info(
                 "No schools change tier under this intervention. "
                 "Try checking more boxes or increasing the literacy improvement slider."
             )
         else:
+            _grad_df["est_cost_ghc"] = _cost_per_school
+            _grad_df["est_cost_usd"] = (_cost_per_school / 14).round(0).astype(int)
+
             # Colour helper
             _TIER_COLOURS = {
                 "CRITICAL": "background-color:#5a0a10;color:#FF6B6B;font-weight:700;",
@@ -2561,22 +2644,37 @@ with tab_sim:
                 return _TIER_COLOURS.get(str(val).upper(), "")
 
             _display_grad = _grad_df[
-                ["school_name", "region", "tier_before", "tier_after", "score_delta"]
+                ["school_name", "region", "tier_before", "tier_after",
+                 "score_delta", "est_cost_ghc", "est_cost_usd"]
             ].rename(columns={
                 "school_name":  "School",
                 "region":       "Region",
                 "tier_before":  "Before Tier",
                 "tier_after":   "After Tier",
                 "score_delta":  "Score Improvement (%pts)",
+                "est_cost_ghc": "Est. Cost (GH₵)",
+                "est_cost_usd": "Est. Cost (USD)",
             })
 
             st.dataframe(
                 _display_grad.style
                 .map(_colour_tier, subset=["Before Tier", "After Tier"])
-                .format({"Score Improvement (%pts)": "{:.2f}"}),
+                .format({
+                    "Score Improvement (%pts)": "{:.2f}",
+                    "Est. Cost (GH₵)": "{:,}",
+                    "Est. Cost (USD)": "${:,}",
+                }),
                 use_container_width=True,
                 hide_index=True,
             )
+
+            # Total cost banner
+            _total_cost_ghc = _cost_per_school * len(_grad_df)
+            _total_cost_usd = _total_cost_ghc // 14
+            _sc1, _sc2, _sc3 = st.columns(3)
+            _sc1.metric("Schools Graduating Tier", len(_grad_df))
+            _sc2.metric("Total Cost (GH₵)", f"GH₵{_total_cost_ghc:,}")
+            _sc3.metric("Total Cost (USD)", f"${_total_cost_usd:,}")
 
         # Download button
         _dl_csv = _result_df.to_csv(index=False).encode("utf-8")
@@ -2643,12 +2741,47 @@ with tab_brief:
                     _md, _plain = _bg.generate(brief_type=_bt, region=_brief_region)
                     st.session_state["brief_text"]  = _md
                     st.session_state["brief_plain"] = _plain
+                    # ── Generate PDF bytes (pure-Python, no wkhtmltopdf needed) ──
+                    _pdf_bytes = None
+                    try:
+                        import importlib, textwrap, html as _html_mod
+                        # Try weasyprint first (available if installed)
+                        _weasyprint = importlib.import_module("weasyprint")
+                        _html_body = ""
+                        for _para in _plain.splitlines():
+                            _stripped = _para.strip()
+                            if _stripped.startswith("# "):
+                                _html_body += f"<h1>{_html_mod.escape(_stripped[2:])}</h1>\n"
+                            elif _stripped.startswith("## "):
+                                _html_body += f"<h2>{_html_mod.escape(_stripped[3:])}</h2>\n"
+                            elif _stripped.startswith("### "):
+                                _html_body += f"<h3>{_html_mod.escape(_stripped[4:])}</h3>\n"
+                            elif _stripped.startswith("|"): 
+                                _html_body += f"<pre>{_html_mod.escape(_stripped)}</pre>\n"
+                            elif _stripped.startswith("> "):
+                                _html_body += f"<blockquote>{_html_mod.escape(_stripped[2:])}</blockquote>\n"
+                            elif _stripped:
+                                _html_body += f"<p>{_html_mod.escape(_stripped)}</p>\n"
+                        _full_html = f"""<!DOCTYPE html><html><head><meta charset='utf-8'>
+<style>
+  body{{font-family:Arial,sans-serif;font-size:11pt;color:#111;margin:2cm;line-height:1.6;}}
+  h1{{color:#006B3F;border-bottom:3px solid #FCD116;padding-bottom:6px;}}
+  h2{{color:#333;border-left:4px solid #FCD116;padding-left:10px;margin-top:24px;}}
+  h3{{color:#555;}}
+  blockquote{{border-left:4px solid #FCD116;margin:12px 0;padding:8px 16px;background:#fffbea;color:#555;}}
+  pre{{background:#f5f5f5;padding:10px;border-radius:4px;font-size:9pt;overflow-x:auto;}}
+  p{{margin:8px 0;}}
+</style></head><body>{_html_body}</body></html>"""
+                        _pdf_bytes = _weasyprint.HTML(string=_full_html).write_pdf()
+                    except Exception:
+                        _pdf_bytes = None  # weasyprint not available — PDF button hidden
+                    st.session_state["brief_pdf"] = _pdf_bytes
 
             if "brief_text" in st.session_state:
                 st.markdown("---")
                 st.markdown(st.session_state["brief_text"])
                 st.markdown("---")
-                _dl1, _dl2, _ = st.columns([2, 2, 3])
+                _dl1, _dl2, _dl3, _ = st.columns([2, 2, 2, 1])
                 with _dl1:
                     st.download_button(
                         label="📥 Download (.md)",
@@ -2665,6 +2798,18 @@ with tab_brief:
                         mime="text/plain",
                         use_container_width=True,
                     )
+                with _dl3:
+                    _pdf_data = st.session_state.get("brief_pdf")
+                    if _pdf_data:
+                        st.download_button(
+                            label="📥 Download (.pdf)",
+                            data=_pdf_data,
+                            file_name="EduInfra_Ghana_Policy_Brief.pdf",
+                            mime="application/pdf",
+                            use_container_width=True,
+                        )
+                    else:
+                        st.caption("PDF: install `weasyprint` to enable")
             else:
                 st.info(
                     "📄 Configure the brief scope above and click **🚀 Generate Brief** — "
