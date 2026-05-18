@@ -64,6 +64,8 @@ except ImportError:
 try:
     import patch_data as _pd_module
     _pd_module.patch()
+    # Clear cached data so the patched CSV is read fresh on next load
+    st.cache_data.clear()
 except Exception:
     pass  # Never crash the app over a patch failure
 
@@ -766,7 +768,7 @@ def _is_coord_anomaly(region: str, lat: float, lon: float) -> bool:
     return not (lat_ok and lon_ok)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=1800)
 def load_data() -> pd.DataFrame:
     """
     Load the priority-ranked school dataset.
@@ -805,7 +807,7 @@ def load_data() -> pd.DataFrame:
 # TAB 4 SUPPORT  —  ranked CSV loader + explainer cache
 # ─────────────────────────────────────────────────────────────────────────────
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=1800)
 def _load_ranked_data() -> pd.DataFrame:
     """
     Load schools_priority_ranked.csv (Stage 1 output, 22 cols incl. enrichment
@@ -2676,6 +2678,19 @@ with tab_sim:
             )
 
     # ── SECTION C — Run button + metrics ────────────────────────────────────
+    if _sim_selected:
+        st.markdown(
+            f"""<div style="background:rgba(252,209,22,0.05);border:1px solid rgba(252,209,22,0.2);
+                            border-radius:10px;padding:14px 20px;margin:8px 0 16px 0;
+                            font-size:0.88rem;color:#C9D1D9;line-height:1.6;">
+                <strong style="color:#FCD116;">⚡ Ready to simulate</strong> — 
+                {len(_sim_selected)} school(s) selected. Configure interventions above,
+                then click <strong style="color:#FCD116;">Run Simulation</strong> to model
+                the infrastructure impact.
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
     _run_sim = st.button("🚀 Run Simulation", type="primary", key="run_sim_btn")
 
     if _run_sim:
