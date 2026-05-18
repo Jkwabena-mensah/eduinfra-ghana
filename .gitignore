@@ -21,9 +21,8 @@ env/
 .vscode/
 *.iml
 
-# Large binary/geodata files
+# Large binary/geodata files — EXCEPT our app models (explicitly allowed below)
 *.geojson
-*.pkl
 *.DTA
 *.DCT
 *.DO
@@ -38,10 +37,21 @@ env/
 *.prj
 *.cpg
 
-# Large data folders
-models/
+# Models — ALLOW the two app pkl files (unblocked with !)
+# *.pkl  <-- removed so models/eduinfra_v1.pkl and v2.pkl are tracked
+!models/eduinfra_v1.pkl
+!models/eduinfra_v2.pkl
+
+# Large data folders — allow specific critical CSVs
 data/dhs/
 data/boundaries/
+data/electrification/
+data/poverty/
+
+# Allow key ranked/scored CSVs that the app needs at runtime
+!data/schools_priority_ranked.csv
+!data/clean/02_schools_scored.csv
+!data/clean/03_schools_corrected.csv
 
 # Logs
 logs/*.log
@@ -58,7 +68,7 @@ outputs/*.html
 outputs/*.png
 outputs/*.json
 
-# Root-level pipeline artefacts (duplicates)
+# Root-level pipeline artefacts (duplicates / large)
 hotosm_gha_education_facilities_points_geojson.geojson
 ghana_schools_final_mapped.csv
 ghana_schools_master_2025.csv
@@ -67,7 +77,7 @@ ghana_schools_master_2025.csv
 2025-SECOND-CYCLE-SCHOOLS-REGISTER-NEW-FINAL-160525_for-approval-2.pdf
 SHSTVET_SCHOOLS.pdf
 
-# One-off utility scripts
+# One-off utility scripts (keep clean)
 apply_final_fixes_v2.py
 apply_geocoding_fixes.py
 check_geocoding_anomalies.py
@@ -78,5 +88,5 @@ fix_geometry.py
 link_gps.py
 test_tesseract.py
 
-# Netlify (not used — Streamlit Cloud deployment)
+# Netlify (not used)
 netlify/
