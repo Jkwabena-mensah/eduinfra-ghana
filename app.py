@@ -660,6 +660,37 @@ st.markdown(
     }}
 
 
+    /* ── Light theme — activated when body has class "edu-light" ── */
+    body.edu-light, body.edu-light [class*="css"], body.edu-light .stApp {{
+        background-color: #F5F7FA !important;
+        color: #1a1a2e !important;
+    }}
+    body.edu-light .masthead {{
+        background: linear-gradient(135deg,#e8ecf0 0%,#dde3ea 60%,#d4dce6 100%) !important;
+        border-left-color: #006B3F !important;
+        box-shadow: 0 0 20px rgba(0,107,63,0.12) !important;
+    }}
+    body.edu-light .masthead h1 {{ color:#006B3F !important; text-shadow:none !important; }}
+    body.edu-light .masthead p  {{ color:#444 !important; }}
+    body.edu-light [data-testid="metric-container"] {{
+        background: rgba(255,255,255,0.85) !important;
+        border-top-color: #006B3F !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+    }}
+    body.edu-light [data-testid="metric-container"] label {{ color:#555 !important; }}
+    body.edu-light [data-testid="metric-container"] [data-testid="stMetricValue"] {{ color:#1a1a2e !important; }}
+    body.edu-light [data-testid="stSidebar"] {{
+        background: linear-gradient(180deg,#e4ece4 0%,#eef2ee 100%) !important;
+    }}
+    body.edu-light [data-testid="stSidebar"] * {{ color:#1a1a2e !important; }}
+    body.edu-light .cluster-card {{ background:rgba(255,255,255,0.9) !important; }}
+    body.edu-light .section-header {{ color:#1a1a2e !important; }}
+    body.edu-light .district-row {{ background:rgba(255,255,255,0.7) !important; }}
+    body.edu-light [data-testid="stTabs"] [role="tab"] {{ color:#555 !important; }}
+    body.edu-light [data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
+        color:#006B3F !important; border-bottom-color:#006B3F !important;
+    }}
+
     /* ── Folium iframe UX ── */
     iframe[title="streamlit_folium.st_folium"] {{
         border: none !important;
@@ -1042,6 +1073,33 @@ with st.sidebar:
     # SECTION 2 — MAP CONTROLS
     # ────────────────────────────────────────────────────────────
     st.markdown('<div class="sidebar-title">⚙️ Command Controls</div>', unsafe_allow_html=True)
+
+    # ── Theme toggle ──────────────────────────────────────────────────
+    _theme_dark = st.toggle(
+        "🌙 Dark Mode",
+        value=st.session_state.get("_theme_dark_val", True),
+        key="theme_toggle",
+        help="Dark = command-center aesthetic  |  Light = report/print-friendly",
+    )
+    st.session_state["_theme_dark_val"] = _theme_dark
+    _theme_body_class = "" if _theme_dark else "edu-light"
+    st.components.v1.html(
+        f"""<script>
+        (function() {{
+            function apply() {{
+                if ({str(not _theme_dark).lower()}) {{
+                    document.body.classList.add('edu-light');
+                }} else {{
+                    document.body.classList.remove('edu-light');
+                }}
+            }}
+            if (document.body) apply();
+            else document.addEventListener('DOMContentLoaded', apply);
+        }})();
+        </script>""",
+        height=0,
+        scrolling=False,
+    )
 
     # ── Region filter ──
     _raw_df_for_filter = load_data()
@@ -1554,9 +1612,26 @@ with tab_map:
     # group by its generated pane class and toggle CSS visibility so schools
     # only appear at district-level zoom, keeping the national view clean.
     from folium import Element
+    import json as _json
+
+    # Build compact school lookup for the map search widget
+    _map_schools_js = _json.dumps([
+        {
+            "name": str(r.get("school_name", "")),
+            "lat":  float(r["latitude"]),
+            "lon":  float(r["longitude"]),
+            "score": round(float(r.get("priority_score", 0)) * 100, 1),
+            "tier": str(r.get("priority_tier", "")).upper(),
+        }
+        for _, r in top_df.iterrows()
+        if not (pd.isna(r.get("latitude")) or pd.isna(r.get("longitude")))
+    ])
+
     progressive_js = f"""
     <script>
     (function() {{
+
+        /* ── 1. Zoom-gated marker visibility ── */
         function applyZoomVisibility(map) {{
             var threshold = {ZOOM_THRESHOLD};
             var zoom = map.getZoom();
@@ -1570,6 +1645,124 @@ with tab_map:
                 }}
             }});
         }}
+
+        /* ── 2. Map-embedded search overlay ── */
+        var SCHOOLS = {_map_schools_js};
+
+        function buildSearchWidget(map) {{
+            var wrap = document.createElement('div');
+            wrap.id = 'map-search-wrap';
+            wrap.style.cssText = [
+                'position:absolute',
+                'top:10px',
+                'left:50%',
+                'transform:translateX(-50%)',
+                'z-index:9999',
+                'width:min(320px,80vw)',
+                'font-family:Inter,Arial,sans-serif',
+            ].join(';');
+
+            var inp = document.createElement('input');
+            inp.id           = 'map-search-input';
+            inp.type         = 'text';
+            inp.placeholder  = '\uD83D\uDD0D Search school on map…';
+            inp.autocomplete = 'off';
+            inp.style.cssText = [
+                'width:100%',
+                'box-sizing:border-box',
+                'padding:9px 14px',
+                'border-radius:24px',
+                'border:1.5px solid rgba(252,209,22,0.5)',
+                'background:rgba(14,17,23,0.92)',
+                'color:#E6EDF3',
+                'font-size:13px',
+                'outline:none',
+                'box-shadow:0 4px 20px rgba(0,0,0,0.5)',
+                'backdrop-filter:blur(12px)',
+                '-webkit-backdrop-filter:blur(12px)',
+                'transition:border-color 0.15s',
+            ].join(';');
+
+            var drop = document.createElement('div');
+            drop.id = 'map-search-drop';
+            drop.style.cssText = [
+                'display:none',
+                'position:absolute',
+                'top:calc(100% + 4px)',
+                'left:0',
+                'width:100%',
+                'max-height:220px',
+                'overflow-y:auto',
+                'background:rgba(14,17,23,0.96)',
+                'border:1px solid rgba(252,209,22,0.25)',
+                'border-radius:10px',
+                'box-shadow:0 8px 32px rgba(0,0,0,0.6)',
+                'backdrop-filter:blur(14px)',
+                '-webkit-backdrop-filter:blur(14px)',
+                'scrollbar-width:thin',
+            ].join(';');
+
+            wrap.appendChild(inp);
+            wrap.appendChild(drop);
+
+            var TIER_COLOR = {{CRITICAL:'#CF0921',HIGH:'#b38600',STABLE:'#1D9E75'}};
+
+            function renderDropdown(results) {{
+                drop.innerHTML = '';
+                if (!results.length) {{ drop.style.display = 'none'; return; }}
+                results.forEach(function(s) {{
+                    var item = document.createElement('div');
+                    var tc   = TIER_COLOR[s.tier] || '#8B949E';
+                    item.style.cssText = 'padding:8px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.1s;';
+                    item.innerHTML = '<div style="font-size:12px;font-weight:600;color:#E6EDF3;">' + s.name + '</div>'
+                        + '<div style="font-size:10px;margin-top:2px;"><span style="color:' + tc + ';font-weight:700;">' + s.tier + '</span>'
+                        + '<span style="color:#8B949E;margin-left:6px;">' + s.score + '%</span></div>';
+                    item.addEventListener('mouseover', function() {{ item.style.background='rgba(252,209,22,0.08)'; }});
+                    item.addEventListener('mouseout',  function() {{ item.style.background=''; }});
+                    item.addEventListener('mousedown', function(e) {{
+                        e.preventDefault();
+                        inp.value = s.name;
+                        drop.style.display = 'none';
+                        map.flyTo([s.lat, s.lon], 15, {{animate:true, duration:1.2}});
+                        setTimeout(function() {{
+                            map.eachLayer(function(layer) {{
+                                if (layer.getLatLng) {{
+                                    var ll = layer.getLatLng();
+                                    if (Math.abs(ll.lat - s.lat) < 0.0001 && Math.abs(ll.lng - s.lon) < 0.0001) {{
+                                        if (layer.openPopup) layer.openPopup();
+                                    }}
+                                }}
+                            }});
+                        }}, 1400);
+                    }});
+                    drop.appendChild(item);
+                }});
+                drop.style.display = 'block';
+            }}
+
+            inp.addEventListener('input', function() {{
+                var q = inp.value.trim().toLowerCase();
+                if (q.length < 2) {{ drop.style.display='none'; return; }}
+                renderDropdown(SCHOOLS.filter(function(s) {{
+                    return s.name.toLowerCase().indexOf(q) !== -1;
+                }}).slice(0,10));
+            }});
+            inp.addEventListener('focus', function() {{
+                inp.style.borderColor='rgba(252,209,22,0.85)';
+                inp.style.boxShadow='0 0 0 2px rgba(252,209,22,0.15),0 4px 20px rgba(0,0,0,0.5)';
+            }});
+            inp.addEventListener('blur', function() {{
+                inp.style.borderColor='rgba(252,209,22,0.5)';
+                inp.style.boxShadow='0 4px 20px rgba(0,0,0,0.5)';
+                setTimeout(function(){{ drop.style.display='none'; }}, 180);
+            }});
+
+            var pane = map.getContainer();
+            pane.style.position = 'relative';
+            pane.appendChild(wrap);
+        }}
+
+        /* ── 3. Attach once map is ready ── */
         function attachToMap() {{
             var maps = [];
             try {{
@@ -1580,6 +1773,7 @@ with tab_map:
             if (!maps.length) return false;
             var map = maps[0];
             applyZoomVisibility(map);
+            if (!document.getElementById('map-search-wrap')) {{ buildSearchWidget(map); }}
             var _pending = false;
             map.on('zoomend', function() {{
                 if (_pending) return;

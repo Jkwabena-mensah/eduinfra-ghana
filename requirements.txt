@@ -38,3 +38,4 @@ python-levenshtein>=0.21.0
 
 # ── HTTP / utilities ──────────────────────────────────────────────────────────
 requests>=2.31.0
+weasyprint>=60.0
