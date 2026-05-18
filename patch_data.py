@@ -219,14 +219,22 @@ def patch():
     print(f"  Rows loaded: {len(df)}")
 
     # ── Idempotency check ─────────────────────────────────────────────────────
+    # "Already patched" means tiers look calibrated:
+    #   • CRITICAL count is plausible (10–200) — NOT 90%+ of all schools
+    #   • CRITICAL share < 40% of total  (raw unpatched data has ~97%)
+    #   • No duplicate school names
+    #   • Fewer than 10 misplaced GPS points remain
+    total_schools    = len(df)
     current_critical = df["priority_tier"].value_counts().get("CRITICAL", 0)
+    critical_pct     = current_critical / max(total_schools, 1)
     already_patched  = (
-        current_critical >= 40
+        10 <= current_critical <= 200
+        and critical_pct < 0.40
         and df["school_name"].duplicated().sum() == 0
         and df.apply(_is_misplaced, axis=1).sum() < 10
     )
     if already_patched:
-        print(f"  ✅ Already patched ({current_critical} CRITICAL). Skipping.")
+        print(f"  ✅ Already patched ({current_critical} CRITICAL, {critical_pct:.1%}). Skipping.")
         return
 
     # ── 1. Recalibrate tiers ─────────────────────────────────────────────────

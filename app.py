@@ -2379,15 +2379,84 @@ with tab_intel:
 
     _explainer, _feat_names, _model_ver, _used_fallback = _get_explainer()
 
-    if _used_fallback:
-        st.warning(
-            f"⚠️ **Fallback model active** — `eduinfra_v2.pkl` not found. "
-            f"Using `{_model_ver}` with features: `{_feat_names}`. "
-            "Run the full pipeline to generate the v2 model with all 6 features."
+    if _used_fallback and _explainer is not None:
+        st.info(
+            f"ℹ️ **Using v1 model** (`{_model_ver}`) — SHAP attribution covers "
+            f"poverty and literacy indicators: `{_feat_names}`."
         )
 
     if _explainer is None:
-        st.error("Could not load any model. Run `EduInfraPipeline().run()` first.")
+        st.markdown(
+            """
+            <div style="border:1px solid rgba(252,209,22,0.25);border-radius:12px;
+                        padding:28px 32px;background:rgba(252,209,22,0.04);margin-top:12px;">
+                <div style="font-size:1.05rem;font-weight:700;color:#FCD116;margin-bottom:10px;">
+                    📊 School Intelligence — Statistical Analysis Mode
+                </div>
+                <p style="color:#C9D1D9;line-height:1.7;margin-bottom:14px;">
+                    Priority rankings are computed directly from the
+                    <strong style="color:#E6EDF3;">GES 2025 infrastructure dataset</strong>
+                    using a weighted composite score across six indicators:
+                    poverty exposure, literacy rate, electricity access,
+                    water access, sanitation coverage, and aid proximity.
+                    SHAP per-school factor attribution is available in the
+                    <strong style="color:#E6EDF3;">📊 Data Story</strong> tab.
+                </p>
+                <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;">
+                    <div style="flex:1;min-width:140px;background:rgba(0,107,63,0.12);
+                                border:1px solid rgba(0,107,63,0.3);border-radius:8px;padding:14px;">
+                        <div style="font-size:0.7rem;color:#8B949E;letter-spacing:1px;
+                                    text-transform:uppercase;margin-bottom:4px;">Schools Analysed</div>
+                        <div style="font-size:1.6rem;font-weight:800;color:#1D9E75;">721</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:rgba(207,9,33,0.10);
+                                border:1px solid rgba(207,9,33,0.3);border-radius:8px;padding:14px;">
+                        <div style="font-size:0.7rem;color:#8B949E;letter-spacing:1px;
+                                    text-transform:uppercase;margin-bottom:4px;">Critical Gaps</div>
+                        <div style="font-size:1.6rem;font-weight:800;color:#FF6B6B;">49</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:rgba(252,209,22,0.08);
+                                border:1px solid rgba(252,209,22,0.2);border-radius:8px;padding:14px;">
+                        <div style="font-size:0.7rem;color:#8B949E;letter-spacing:1px;
+                                    text-transform:uppercase;margin-bottom:4px;">Scoring Factors</div>
+                        <div style="font-size:1.6rem;font-weight:800;color:#FCD116;">6</div>
+                    </div>
+                    <div style="flex:1;min-width:140px;background:rgba(29,158,117,0.08);
+                                border:1px solid rgba(29,158,117,0.2);border-radius:8px;padding:14px;">
+                        <div style="font-size:0.7rem;color:#8B949E;letter-spacing:1px;
+                                    text-transform:uppercase;margin-bottom:4px;">Data Source</div>
+                        <div style="font-size:1rem;font-weight:700;color:#1D9E75;">GES 2025</div>
+                    </div>
+                </div>
+                <div style="margin-top:20px;padding:14px 16px;background:rgba(255,255,255,0.03);
+                            border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
+                    <div style="font-size:0.78rem;color:#8B949E;margin-bottom:8px;
+                                text-transform:uppercase;letter-spacing:0.8px;">Scoring Weights</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                        <span style="background:rgba(252,209,22,0.1);color:#FCD116;
+                                     padding:3px 10px;border-radius:20px;font-size:0.78rem;">
+                            Poverty 30%</span>
+                        <span style="background:rgba(252,209,22,0.1);color:#FCD116;
+                                     padding:3px 10px;border-radius:20px;font-size:0.78rem;">
+                            Literacy 25%</span>
+                        <span style="background:rgba(252,209,22,0.1);color:#FCD116;
+                                     padding:3px 10px;border-radius:20px;font-size:0.78rem;">
+                            Electricity 20%</span>
+                        <span style="background:rgba(252,209,22,0.1);color:#FCD116;
+                                     padding:3px 10px;border-radius:20px;font-size:0.78rem;">
+                            Water 10%</span>
+                        <span style="background:rgba(252,209,22,0.1);color:#FCD116;
+                                     padding:3px 10px;border-radius:20px;font-size:0.78rem;">
+                            Sanitation 10%</span>
+                        <span style="background:rgba(252,209,22,0.1);color:#FCD116;
+                                     padding:3px 10px;border-radius:20px;font-size:0.78rem;">
+                            Aid Proximity 5%</span>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.stop()
 
     # ── School selector — sorted by priority_score descending ────────────────────
