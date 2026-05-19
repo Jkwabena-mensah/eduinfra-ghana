@@ -2364,20 +2364,13 @@ with tab_intel:
 
     # ── Guard: shap not installed ──────────────────────────────────────────────────────
     if not _EXPLAINER_AVAILABLE:
-        st.error(
-            "**shap is not installed.**  Install it and restart the server:\n\n"
-            "```\npip install shap\n```"
-        )
-        st.stop()
+        st.info("ℹ️ SHAP explainability library not available in this deployment.")
 
     # ── Load data and explainer ────────────────────────────────────────────────────────
     _ranked = _load_ranked_data()
     if _ranked.empty:
-        st.warning(
-            "⚠️ No ranked data found. Run the pipeline first "
-            "(click **🚀 Run AI Infrastructure Pipeline** in the sidebar)."
-        )
-        st.stop()
+        st.warning("⚠️ No ranked data available — showing summary statistics only.")
+        _ranked = df.copy()  # fall back to main df so tab doesn't crash
 
     _explainer, _feat_names, _model_ver, _used_fallback = _get_explainer()
 
@@ -2459,8 +2452,6 @@ with tab_intel:
             """,
             unsafe_allow_html=True,
         )
-        st.stop()
-
     # ── School selector — sorted by priority_score descending ────────────────────
     _sorted_schools = (
         _ranked
@@ -2549,8 +2540,7 @@ with tab_intel:
             _fig    = _explainer.plot_waterfall(_school_row_filled)
             st.plotly_chart(_fig, use_container_width=True)
         except Exception as _ex:
-            st.error(f"SHAP computation failed: {_ex}")
-            st.stop()
+            st.warning(f"⚠️ SHAP computation could not run for this school: {_ex}")
 
     # ── Top-3 factor cards ────────────────────────────────────────────────────────────
     st.markdown(
