@@ -693,11 +693,22 @@ st.markdown(
         color:#006B3F !important; border-bottom-color:#006B3F !important;
     }}
 
-    /* ── Folium iframe UX ── */
+    /* ── Folium iframe UX — no scrollbars, no border ── */
     iframe[title="streamlit_folium.st_folium"] {{
         border: none !important;
         border-radius: 10px;
         display: block;
+        overflow: hidden !important;
+    }}
+    /* Prevent the iframe wrapper from showing scrollbars */
+    [data-testid="stIFrame"] {{
+        overflow: hidden !important;
+        border-radius: 10px;
+    }}
+    /* Ensure the map container clips correctly */
+    .stFolium, .element-container:has(iframe[title="streamlit_folium.st_folium"]) {{
+        overflow: hidden !important;
+        border-radius: 10px;
     }}
     /* ── Button hover lift ── */
     .stButton > button {{ transition: all 0.18s ease !important; }}
@@ -1961,7 +1972,7 @@ with tab_map:
     """
     m.get_root().html.add_child(branca.element.Element(_watermark_html))
 
-    st_folium(m, width="100%", height=640, returned_objects=[])
+    st_folium(m, use_container_width=True, height=640, returned_objects=[])
     st.caption(
         f"📌 **{plotted} schools** with valid GPS coordinates — "
         f"markers appear at **zoom ≥ {ZOOM_THRESHOLD}** (district level) to keep the national view clean. "
@@ -2127,7 +2138,7 @@ with tab_cluster:
                         ),
                     ).add_to(cm)
 
-                st_folium(cm, width="100%", height=520, returned_objects=[])
+                st_folium(cm, use_container_width=True, height=520, returned_objects=[])
 
             # ── Cluster list ──
             with col_list:
