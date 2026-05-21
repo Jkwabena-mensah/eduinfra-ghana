@@ -707,63 +707,6 @@ st.markdown(
         overflow: hidden !important; border-radius: 10px;
     }}
 
-    /* ── Preloader overlay ── */
-    #edu-preloader {{
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
-        background: #0e1117;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-        transition: opacity 0.6s ease, visibility 0.6s ease;
-    }}
-    #edu-preloader.hidden {{ opacity: 0; visibility: hidden; pointer-events: none; }}
-    .pl-logo {{
-        font-family: 'Montserrat', sans-serif;
-        font-size: 1.4rem;
-        font-weight: 900;
-        color: #FCD116;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        text-shadow: 0 0 24px rgba(252,209,22,0.4);
-    }}
-    .pl-sub {{
-        font-family: 'Inter', sans-serif;
-        font-size: 0.78rem;
-        color: #8B949E;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-    }}
-    .pl-bar-wrap {{
-        width: 220px;
-        height: 3px;
-        background: rgba(255,255,255,0.08);
-        border-radius: 3px;
-        overflow: hidden;
-    }}
-    .pl-bar {{
-        height: 100%;
-        background: linear-gradient(90deg, #006B3F, #FCD116, #CF0921);
-        border-radius: 3px;
-        animation: plBarSlide 1.8s ease-in-out infinite;
-    }}
-    @keyframes plBarSlide {{
-        0%   {{ width: 0%;   margin-left: 0%;   }}
-        50%  {{ width: 70%;  margin-left: 15%;  }}
-        100% {{ width: 0%;   margin-left: 100%; }}
-    }}
-    .pl-spinner {{
-        width: 44px; height: 44px;
-        border: 3px solid rgba(252,209,22,0.15);
-        border-top-color: #FCD116;
-        border-radius: 50%;
-        animation: plSpin 0.9s linear infinite;
-    }}
-    @keyframes plSpin {{ to {{ transform: rotate(360deg); }} }}
-
     /* ── KPI card staggered entrance ── */
     @keyframes kpiReveal {{
         from {{ opacity:0; transform:translateY(14px) scale(0.97); }}
@@ -1012,24 +955,6 @@ def _plotly_dark_layout(
 # PRELOADER + MASTHEAD
 # ─────────────────────────────────────────────────────────────────────────────
 # Inject preloader overlay — dismissed by JS once Streamlit mounts content
-st.markdown("""
-<div id="edu-preloader">
-    <div class="pl-spinner"></div>
-    <div class="pl-logo">🇬🇭 EduInfra Ghana</div>
-    <div class="pl-bar-wrap"><div class="pl-bar"></div></div>
-    <div class="pl-sub">Loading infrastructure intelligence…</div>
-</div>
-<script>
-setTimeout(function() {
-    var pl = document.getElementById('edu-preloader');
-    if (pl) {
-        pl.classList.add('hidden');
-        setTimeout(function() { if (pl && pl.parentNode) pl.parentNode.removeChild(pl); }, 700);
-    }
-}, 3000);
-</script>
-""", unsafe_allow_html=True)
-
 st.markdown(
     """
     <div class="masthead">
