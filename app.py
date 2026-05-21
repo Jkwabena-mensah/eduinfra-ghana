@@ -2527,81 +2527,81 @@ with tab_intel:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── SHAP waterfall chart ─────────────────────────────────────────────────────────
-    with st.spinner("Computing SHAP values…"):
-        try:
-            # Fill any missing enrichment columns with 0 before passing to explainer
-            # (happens when v1 fallback model is active and ranked CSV has only 2 features)
-            _school_row_filled = _school_row.copy()
-            for _fc in _feat_names:
-                if _fc not in _school_row_filled.index:
-                    _school_row_filled[_fc] = 0.0
-            _result = _explainer.explain_school(_school_row_filled)
-            _fig    = _explainer.plot_waterfall(_school_row_filled)
-            st.plotly_chart(_fig, use_container_width=True)
-        except Exception as _ex:
-            st.warning(f"⚠️ SHAP computation could not run for this school: {_ex}")
+    # ── SHAP waterfall chart ────────────────────────────────────────────────────────
+    _result  = None
+    _shap_ok = False
+    if _explainer is not None:
+        with st.spinner("Computing SHAP values…"):
+            try:
+                _school_row_filled = _school_row.copy()
+                for _fc in _feat_names:
+                    if _fc not in _school_row_filled.index:
+                        _school_row_filled[_fc] = 0.0
+                _result = _explainer.explain_school(_school_row_filled)
+                _fig    = _explainer.plot_waterfall(_school_row_filled)
+                st.plotly_chart(_fig, use_container_width=True)
+                _shap_ok = True
+            except Exception as _ex:
+                st.warning(f"⚠️ SHAP could not run for this school: {_ex}")
+    else:
+        st.info("ℹ️ SHAP factor analysis is not available in this deployment. "
+                "Score breakdown is shown in the 📊 Data Story tab.")
 
-    # ── Top-3 factor cards ────────────────────────────────────────────────────────────
-    st.markdown(
-        '<div class="section-header" style="margin-top:8px;">Top 3 Priority Drivers</div>',
-        unsafe_allow_html=True,
-    )
-
-    _top = _result["top_factors"]
-    _fc1, _fc2, _fc3 = st.columns(3)
-    _factor_cols = [_fc1, _fc2, _fc3]
-
-    for _fcol, _factor in zip(_factor_cols, _top):
-        _sv        = _factor["shap_value"]
-        _direction = _factor["direction"]
-        _arrow     = "▲" if _direction == "increases" else "▼"
-        with _fcol:
-            _lbl  = _factor["label"]
-            _pe   = _factor["plain_english"]
-            _card = f"**{_arrow} {_lbl}**  \n" + f"SHAP: `{_sv:+.4f}`  \n" + _pe
-            st.info(_card)
-
-    # ── Narrative paragraph ───────────────────────────────────────────────────────────────
-    if len(_top) >= 3:
-        _f1 = _top[0]["plain_english"].rstrip(".")
-        _f2 = _top[1]["plain_english"][0].lower() + _top[1]["plain_english"][1:].rstrip(".")
-        _f3 = _top[2]["plain_english"][0].lower() + _top[2]["plain_english"][1:].rstrip(".")
-        _enrol_str = f"{int(_enrol):,}" if str(_enrol).replace(".", "").isdigit() else str(_enrol)
-
-        _narrative = (
-            f"This school is classified **{_tier}** primarily because {_f1}, "
-            f"combined with {_f2} and {_f3}. "
-            f"It serves approximately **{_enrol_str}** students in "
-            f"**{_dist.title()}** district."
-        )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        import re as _re
-        _bold_narrative = _re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', _narrative)
-
+    # ── Top-3 factor cards + narrative (only when SHAP ran) ──────────────────────────
+    if _shap_ok and _result is not None:
         st.markdown(
-            f"""
-            <div style="
-                background:rgba(252,209,22,0.06);
-                border:1px solid rgba(252,209,22,0.2);
-                border-left:4px solid #FCD116;
-                border-radius:8px;
-                padding:16px 20px;
-                font-size:0.92rem;
-                color:#E6EDF3;
-                line-height:1.7;
-            ">
-                <span style="font-size:0.7rem;font-weight:700;letter-spacing:1.4px;
-                             text-transform:uppercase;color:#FCD116;
-                             display:block;margin-bottom:8px;">
-                    📝 Why This Matters
-                </span>
-                {_bold_narrative}
-            </div>
-            """,
+            '<div class="section-header" style="margin-top:8px;">Top 3 Priority Drivers</div>',
             unsafe_allow_html=True,
         )
+        _top = _result["top_factors"]
+        _fc1, _fc2, _fc3 = st.columns(3)
+        _factor_cols = [_fc1, _fc2, _fc3]
+        for _fcol, _factor in zip(_factor_cols, _top):
+            _sv        = _factor["shap_value"]
+            _direction = _factor["direction"]
+            _arrow     = "▲" if _direction == "increases" else "▼"
+            with _fcol:
+                _lbl  = _factor["label"]
+                _pe   = _factor["plain_english"]
+                _card = f"**{_arrow} {_lbl}**  \n" + f"SHAP: `{_sv:+.4f}`  \n" + _pe
+                st.info(_card)
+
+        if len(_top) >= 3:
+            _f1 = _top[0]["plain_english"].rstrip(".")
+            _f2 = _top[1]["plain_english"][0].lower() + _top[1]["plain_english"][1:].rstrip(".")
+            _f3 = _top[2]["plain_english"][0].lower() + _top[2]["plain_english"][1:].rstrip(".")
+            _enrol_str = f"{int(_enrol):,}" if str(_enrol).replace(".", "").isdigit() else str(_enrol)
+            _narrative = (
+                f"This school is classified **{_tier}** primarily because {_f1}, "
+                f"combined with {_f2} and {_f3}. "
+                f"It serves approximately **{_enrol_str}** students in "
+                f"**{_dist.title()}** district."
+            )
+            st.markdown("<br>", unsafe_allow_html=True)
+            import re as _re
+            _bold_narrative = _re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', _narrative)
+            st.markdown(
+                f"""
+                <div style="
+                    background:rgba(252,209,22,0.06);
+                    border:1px solid rgba(252,209,22,0.2);
+                    border-left:4px solid #FCD116;
+                    border-radius:8px;
+                    padding:16px 20px;
+                    font-size:0.92rem;
+                    color:#E6EDF3;
+                    line-height:1.7;
+                ">
+                    <span style="font-size:0.7rem;font-weight:700;letter-spacing:1.4px;
+                                 text-transform:uppercase;color:#FCD116;
+                                 display:block;margin-bottom:8px;">
+                        📝 Why This Matters
+                    </span>
+                    {_bold_narrative}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
