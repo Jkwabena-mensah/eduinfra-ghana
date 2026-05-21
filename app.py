@@ -1020,33 +1020,13 @@ st.markdown("""
     <div class="pl-sub">Loading infrastructure intelligence…</div>
 </div>
 <script>
-(function() {
-    function dismissPreloader() {
-        var pl = document.getElementById('edu-preloader');
-        if (!pl) return;
-        // Wait until Streamlit's main block has content
-        var obs = new MutationObserver(function(_, o) {
-            var main = document.querySelector('[data-testid="stAppViewContainer"]');
-            if (main && main.children.length > 1) {
-                setTimeout(function() {
-                    pl.classList.add('hidden');
-                    setTimeout(function() { if (pl.parentNode) pl.parentNode.removeChild(pl); }, 700);
-                }, 400);
-                o.disconnect();
-            }
-        });
-        obs.observe(document.body, { childList: true, subtree: true });
-        // Hard timeout fallback — dismiss after 5s regardless
-        setTimeout(function() {
-            pl.classList.add('hidden');
-        }, 5000);
+setTimeout(function() {
+    var pl = document.getElementById('edu-preloader');
+    if (pl) {
+        pl.classList.add('hidden');
+        setTimeout(function() { if (pl && pl.parentNode) pl.parentNode.removeChild(pl); }, 700);
     }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', dismissPreloader);
-    } else {
-        dismissPreloader();
-    }
-})();
+}, 3000);
 </script>
 """, unsafe_allow_html=True)
 
