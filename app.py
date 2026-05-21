@@ -699,16 +699,122 @@ st.markdown(
         border-radius: 10px;
         display: block;
         overflow: hidden !important;
+        cursor: grab !important;
     }}
-    /* Prevent the iframe wrapper from showing scrollbars */
-    [data-testid="stIFrame"] {{
-        overflow: hidden !important;
-        border-radius: 10px;
-    }}
-    /* Ensure the map container clips correctly */
+    iframe[title="streamlit_folium.st_folium"]:active {{ cursor: grabbing !important; }}
+    [data-testid="stIFrame"] {{ overflow: hidden !important; border-radius: 10px; }}
     .stFolium, .element-container:has(iframe[title="streamlit_folium.st_folium"]) {{
-        overflow: hidden !important;
-        border-radius: 10px;
+        overflow: hidden !important; border-radius: 10px;
+    }}
+
+    /* ── Preloader overlay ── */
+    #edu-preloader {{
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: #0e1117;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        transition: opacity 0.6s ease, visibility 0.6s ease;
+    }}
+    #edu-preloader.hidden {{ opacity: 0; visibility: hidden; pointer-events: none; }}
+    .pl-logo {{
+        font-family: 'Montserrat', sans-serif;
+        font-size: 1.4rem;
+        font-weight: 900;
+        color: #FCD116;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        text-shadow: 0 0 24px rgba(252,209,22,0.4);
+    }}
+    .pl-sub {{
+        font-family: 'Inter', sans-serif;
+        font-size: 0.78rem;
+        color: #8B949E;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+    }}
+    .pl-bar-wrap {{
+        width: 220px;
+        height: 3px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 3px;
+        overflow: hidden;
+    }}
+    .pl-bar {{
+        height: 100%;
+        background: linear-gradient(90deg, #006B3F, #FCD116, #CF0921);
+        border-radius: 3px;
+        animation: plBarSlide 1.8s ease-in-out infinite;
+    }}
+    @keyframes plBarSlide {{
+        0%   {{ width: 0%;   margin-left: 0%;   }}
+        50%  {{ width: 70%;  margin-left: 15%;  }}
+        100% {{ width: 0%;   margin-left: 100%; }}
+    }}
+    .pl-spinner {{
+        width: 44px; height: 44px;
+        border: 3px solid rgba(252,209,22,0.15);
+        border-top-color: #FCD116;
+        border-radius: 50%;
+        animation: plSpin 0.9s linear infinite;
+    }}
+    @keyframes plSpin {{ to {{ transform: rotate(360deg); }} }}
+
+    /* ── KPI card staggered entrance ── */
+    @keyframes kpiReveal {{
+        from {{ opacity:0; transform:translateY(14px) scale(0.97); }}
+        to   {{ opacity:1; transform:translateY(0)   scale(1);    }}
+    }}
+    [data-testid="metric-container"] {{
+        animation: kpiReveal 0.5s ease forwards;
+        animation-delay: calc(var(--kpi-i, 0) * 0.08s);
+        opacity: 0;
+    }}
+    [data-testid="metric-container"]:nth-child(1) {{ --kpi-i:0; }}
+    [data-testid="metric-container"]:nth-child(2) {{ --kpi-i:1; }}
+    [data-testid="metric-container"]:nth-child(3) {{ --kpi-i:2; }}
+    [data-testid="metric-container"]:nth-child(4) {{ --kpi-i:3; }}
+
+    /* ── Tab active indicator slide-in ── */
+    [data-testid="stTabs"] [role="tab"][aria-selected="true"] {{
+        color: #FFD700;
+        border-bottom: 3px solid #FCD116;
+        text-shadow: 0 0 16px rgba(255,215,0,0.4);
+        animation: tabPop 0.2s ease;
+    }}
+    @keyframes tabPop {{
+        from {{ transform: scaleX(0.92); }}
+        to   {{ transform: scaleX(1);    }}
+    }}
+
+    /* ── Section header slide-in (already had fadeSlideIn, bump it) ── */
+    .section-header {{
+        animation: fadeSlideIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards;
+    }}
+
+    /* ── Cluster card hover lift ── */
+    .cluster-card:hover {{
+        transform: translateX(4px) translateY(-1px);
+        box-shadow: 0 6px 24px rgba(0,0,0,0.4), 0 0 12px rgba(252,209,22,0.1);
+    }}
+
+    /* ── KPI metric hover: tighter glow ── */
+    [data-testid="metric-container"]:hover {{
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 28px rgba(252,209,22,0.18);
+    }}
+
+    /* ── Download button pulse on appear ── */
+    [data-testid="stDownloadButton"] button {{
+        animation: btnPulse 2s ease-in-out 1s 1;
+    }}
+    @keyframes btnPulse {{
+        0%,100% {{ box-shadow: 0 0 0 0 rgba(252,209,22,0); }}
+        50%     {{ box-shadow: 0 0 0 6px rgba(252,209,22,0.2); }}
     }}
     /* ── Button hover lift ── */
     .stButton > button {{ transition: all 0.18s ease !important; }}
@@ -903,8 +1009,47 @@ def _plotly_dark_layout(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MASTHEAD
+# PRELOADER + MASTHEAD
 # ─────────────────────────────────────────────────────────────────────────────
+# Inject preloader overlay — dismissed by JS once Streamlit mounts content
+st.markdown("""
+<div id="edu-preloader">
+    <div class="pl-spinner"></div>
+    <div class="pl-logo">🇬🇭 EduInfra Ghana</div>
+    <div class="pl-bar-wrap"><div class="pl-bar"></div></div>
+    <div class="pl-sub">Loading infrastructure intelligence…</div>
+</div>
+<script>
+(function() {
+    function dismissPreloader() {
+        var pl = document.getElementById('edu-preloader');
+        if (!pl) return;
+        // Wait until Streamlit's main block has content
+        var obs = new MutationObserver(function(_, o) {
+            var main = document.querySelector('[data-testid="stAppViewContainer"]');
+            if (main && main.children.length > 1) {
+                setTimeout(function() {
+                    pl.classList.add('hidden');
+                    setTimeout(function() { if (pl.parentNode) pl.parentNode.removeChild(pl); }, 700);
+                }, 400);
+                o.disconnect();
+            }
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+        // Hard timeout fallback — dismiss after 5s regardless
+        setTimeout(function() {
+            pl.classList.add('hidden');
+        }, 5000);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', dismissPreloader);
+    } else {
+        dismissPreloader();
+    }
+})();
+</script>
+""", unsafe_allow_html=True)
+
 st.markdown(
     """
     <div class="masthead">
@@ -1868,15 +2013,15 @@ with tab_map:
             "fillColor": "none",
             "fillOpacity": 0.0,
             "color": GhanaColors.GOLD,
-            "weight": 8,
-            "opacity": 0.15,
+            "weight": 10,
+            "opacity": 0.18,
+            "smoothFactor": 0,
         },
         interactive=False,
         tooltip=None,
     ).add_to(m)
 
-    # ── Layer 3 — TOP: Crisp sovereign border ───────────────────────────────
-    # Added LAST = highest z-index. Thin, high-opacity line for map precision.
+    # ── Layer 3 — TOP: Crisp sovereign border — smoothFactor=0 for pixel-perfect edges ──
     folium.GeoJson(
         _ghana_geojson,
         name="ghana_border_gold",
@@ -1884,9 +2029,12 @@ with tab_map:
             "fillColor": "none",
             "fillOpacity": 0.0,
             "color": GhanaColors.GOLD_BRIGHT,
-            "weight": 1.5,
-            "opacity": 0.9,
+            "weight": 2,
+            "opacity": 0.92,
             "dashArray": None,
+            "smoothFactor": 0,
+            "lineJoin": "round",
+            "lineCap": "round",
         },
         interactive=False,
         tooltip=None,
