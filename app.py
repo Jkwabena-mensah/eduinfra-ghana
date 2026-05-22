@@ -1480,9 +1480,12 @@ with tab_map:
     }
     mc = MarkerCluster(options=_mc_options, name="school_markers")
 
-    # Ghana national bounding box — filters out misplaced GPS centroids
-    _GH_LAT_MIN, _GH_LAT_MAX =  4.4,  11.4
-    _GH_LON_MIN, _GH_LON_MAX = -3.5,   1.4
+    # Ghana national bounding box — filters out genuinely misplaced GPS points.
+    # NOTE: Chereponi (lon 0.4) and Garu/Tempane (lon 0.2) are legitimately
+    # on Ghana's eastern border — do NOT filter them. Only exclude coordinates
+    # that are clearly wrong (lon > 1.4 puts you deep in Benin/Togo interior).
+    _GH_LAT_MIN, _GH_LAT_MAX =  4.2,  11.5
+    _GH_LON_MIN, _GH_LON_MAX = -3.6,   1.4
 
     heatmap_data = []
     plotted = 0
@@ -1490,8 +1493,6 @@ with tab_map:
         if pd.isna(row.get("latitude")) or pd.isna(row.get("longitude")):
             continue
         _lat, _lon = float(row["latitude"]), float(row["longitude"])
-        # Skip markers outside Ghana — they were GPS-corrected to district
-        # centroids but some centroids still fall slightly outside the border
         if not (_GH_LAT_MIN <= _lat <= _GH_LAT_MAX and
                 _GH_LON_MIN <= _lon <= _GH_LON_MAX):
             continue
