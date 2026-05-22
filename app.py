@@ -1447,8 +1447,8 @@ with tab_map:
         min_zoom=6,
         max_zoom=18,
         prefer_canvas=True,
-        zoom_snap=0.25,
-        zoom_delta=0.5,
+        zoom_snap=0.5,
+        zoom_delta=1,
         scroll_wheel_zoom=True,
         double_click_zoom=True,
         dragging=True,
@@ -1471,12 +1471,42 @@ with tab_map:
 
     # ── MarkerCluster with spiderfy ──
     _mc_options = {
-        "spiderfyOnMaxZoom": True,
-        "showCoverageOnHover": True,
-        "zoomToBoundsOnClick": True,
-        "spiderfyDistanceMultiplier": 1.5,
-        "maxClusterRadius": 40,
-        "disableClusteringAtZoom": 10,
+        "spiderfyOnMaxZoom":        True,
+        "showCoverageOnHover":      False,   # cleaner look
+        "zoomToBoundsOnClick":      True,    # click cluster → zoom to its schools
+        "spiderfyDistanceMultiplier": 2.0,   # more spread when spiderfied
+        "maxClusterRadius":         60,      # px radius to group — smaller = breaks apart sooner
+        "disableClusteringAtZoom":  9,       # show individual markers at zoom ≥ 9
+        "animate":                  True,
+        "animateAddingMarkers":     False,
+        "chunkedLoading":           True,
+        "iconCreateFunction": """function(cluster) {
+            var count = cluster.getChildCount();
+            var size  = count > 20 ? 44 : count > 10 ? 38 : count > 5 ? 32 : 26;
+            var color = count > 20 ? '#CF0921' : count > 10 ? '#b38600' : '#1D9E75';
+            var glow  = count > 20
+                ? 'rgba(207,9,33,0.35)' : count > 10
+                ? 'rgba(252,209,22,0.25)' : 'rgba(29,158,117,0.25)';
+            return L.divIcon({
+                html: '<div style="'
+                    + 'width:'  + size + 'px;'
+                    + 'height:' + size + 'px;'
+                    + 'line-height:' + size + 'px;'
+                    + 'text-align:center;'
+                    + 'background:' + color + ';'
+                    + 'border:2px solid rgba(255,255,255,0.25);'
+                    + 'border-radius:50%;'
+                    + 'color:white;'
+                    + 'font-family:Inter,Arial,sans-serif;'
+                    + 'font-size:' + (count > 9 ? 12 : 13) + 'px;'
+                    + 'font-weight:700;'
+                    + 'box-shadow:0 0 12px ' + glow + ',0 2px 8px rgba(0,0,0,0.5);'
+                    + '">' + count + '</div>',
+                className: '',
+                iconSize: L.point(size, size),
+                iconAnchor: L.point(size/2, size/2),
+            });
+        }""",
     }
     mc = MarkerCluster(options=_mc_options, name="school_markers")
 
