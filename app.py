@@ -1691,6 +1691,51 @@ with tab_map:
     ])
 
     progressive_js = f"""
+    <style>
+    /* ── Click-to-activate overlay (Google Maps style) ── */
+    #map-activate-overlay {{
+        position: absolute;
+        inset: 0;
+        z-index: 10000;
+        background: rgba(0,0,0,0);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.25s ease;
+        pointer-events: all;
+        border-radius: 10px;
+    }}
+    #map-activate-overlay .map-hint {{
+        background: rgba(14,17,23,0.88);
+        border: 1px solid rgba(252,209,22,0.4);
+        border-radius: 24px;
+        padding: 10px 22px;
+        font-family: Inter, Arial, sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: rgba(252,209,22,0.9);
+        letter-spacing: 0.3px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        pointer-events: none;
+        white-space: nowrap;
+    }}
+    #map-activate-overlay.hint-visible .map-hint {{
+        opacity: 1;
+        transform: translateY(0);
+    }}
+    #map-activate-overlay.active-mode {{
+        pointer-events: none !important;
+        background: rgba(0,0,0,0) !important;
+    }}
+    /* Search widget */
+    #map-search-wrap {{ transition: opacity 0.2s; }}
+    </style>
     <script>
     (function() {{
 
@@ -1709,7 +1754,65 @@ with tab_map:
             }});
         }}
 
-        /* ── 2. Map-embedded search overlay ── */
+        /* ── 2. Click-to-activate (Google Maps style) ── */
+        function buildActivateOverlay(map) {{
+            var container = map.getContainer();
+            container.style.position = 'relative';
+
+            var overlay = document.createElement('div');
+            overlay.id = 'map-activate-overlay';
+
+            var hint = document.createElement('div');
+            hint.className = 'map-hint';
+            hint.textContent = '🖱  Click to interact with map';
+            overlay.appendChild(hint);
+            container.appendChild(overlay);
+
+            // Show hint on wheel-over (before activation)
+            overlay.addEventListener('wheel', function(e) {{
+                e.stopPropagation();
+                overlay.classList.add('hint-visible');
+                clearTimeout(overlay._hintTimer);
+                overlay._hintTimer = setTimeout(function() {{
+                    overlay.classList.remove('hint-visible');
+                }}, 1800);
+            }}, {{ passive: true }});
+
+            // Activate on click — disable overlay, enable scroll zoom
+            overlay.addEventListener('click', function() {{
+                overlay.classList.add('active-mode');
+                map.scrollWheelZoom.enable();
+                // Deactivate when user clicks outside the map container
+                function onOutsideClick(e) {{
+                    if (!container.contains(e.target)) {{
+                        overlay.classList.remove('active-mode');
+                        map.scrollWheelZoom.disable();
+                        document.removeEventListener('click', onOutsideClick);
+                    }}
+                }}
+                setTimeout(function() {{
+                    document.addEventListener('click', onOutsideClick);
+                }}, 100);
+            }});
+
+            // Ctrl+scroll always works regardless of activation state
+            container.addEventListener('wheel', function(e) {{
+                if (e.ctrlKey || e.metaKey) {{
+                    e.preventDefault();
+                    var delta = e.deltaY > 0 ? -1 : 1;
+                    map.setZoom(map.getZoom() + delta);
+                }}
+            }}, {{ passive: false }});
+
+            // Touch: pinch-to-zoom works natively via Leaflet touchZoom
+            map.touchZoom.enable();
+            map.doubleClickZoom.enable();
+
+            // Start with scroll zoom DISABLED (like Google Maps)
+            map.scrollWheelZoom.disable();
+        }}
+
+        /* ── 3. Map-embedded search widget ── */
         var SCHOOLS = {_map_schools_js};
 
         function buildSearchWidget(map) {{
@@ -1772,14 +1875,16 @@ with tab_map:
 
             function renderDropdown(results) {{
                 drop.innerHTML = '';
-                if (!results.length) {{ drop.style.display = 'none'; return; }}
+                if (!results.length) {{ drop.style.display='none'; return; }}
                 results.forEach(function(s) {{
                     var item = document.createElement('div');
-                    var tc   = TIER_COLOR[s.tier] || '#8B949E';
+                    var tc = TIER_COLOR[s.tier] || '#8B949E';
                     item.style.cssText = 'padding:8px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.1s;';
-                    item.innerHTML = '<div style="font-size:12px;font-weight:600;color:#E6EDF3;">' + s.name + '</div>'
-                        + '<div style="font-size:10px;margin-top:2px;"><span style="color:' + tc + ';font-weight:700;">' + s.tier + '</span>'
-                        + '<span style="color:#8B949E;margin-left:6px;">' + s.score + '%</span></div>';
+                    item.innerHTML =
+                        '<div style="font-size:12px;font-weight:600;color:#E6EDF3;">' + s.name + '</div>' +
+                        '<div style="font-size:10px;margin-top:2px;">' +
+                        '<span style="color:' + tc + ';font-weight:700;">' + s.tier + '</span>' +
+                        '<span style="color:#8B949E;margin-left:6px;">' + s.score + '%</span></div>';
                     item.addEventListener('mouseover', function() {{ item.style.background='rgba(252,209,22,0.08)'; }});
                     item.addEventListener('mouseout',  function() {{ item.style.background=''; }});
                     item.addEventListener('mousedown', function(e) {{
@@ -1791,7 +1896,8 @@ with tab_map:
                             map.eachLayer(function(layer) {{
                                 if (layer.getLatLng) {{
                                     var ll = layer.getLatLng();
-                                    if (Math.abs(ll.lat - s.lat) < 0.0001 && Math.abs(ll.lng - s.lon) < 0.0001) {{
+                                    if (Math.abs(ll.lat - s.lat) < 0.0001 &&
+                                        Math.abs(ll.lng - s.lon) < 0.0001) {{
                                         if (layer.openPopup) layer.openPopup();
                                     }}
                                 }}
@@ -1808,16 +1914,16 @@ with tab_map:
                 if (q.length < 2) {{ drop.style.display='none'; return; }}
                 renderDropdown(SCHOOLS.filter(function(s) {{
                     return s.name.toLowerCase().indexOf(q) !== -1;
-                }}).slice(0,10));
+                }}).slice(0, 10));
             }});
             inp.addEventListener('focus', function() {{
-                inp.style.borderColor='rgba(252,209,22,0.85)';
-                inp.style.boxShadow='0 0 0 2px rgba(252,209,22,0.15),0 4px 20px rgba(0,0,0,0.5)';
+                inp.style.borderColor = 'rgba(252,209,22,0.85)';
+                inp.style.boxShadow   = '0 0 0 2px rgba(252,209,22,0.15),0 4px 20px rgba(0,0,0,0.5)';
             }});
             inp.addEventListener('blur', function() {{
-                inp.style.borderColor='rgba(252,209,22,0.5)';
-                inp.style.boxShadow='0 4px 20px rgba(0,0,0,0.5)';
-                setTimeout(function(){{ drop.style.display='none'; }}, 180);
+                inp.style.borderColor = 'rgba(252,209,22,0.5)';
+                inp.style.boxShadow   = '0 4px 20px rgba(0,0,0,0.5)';
+                setTimeout(function() {{ drop.style.display='none'; }}, 180);
             }});
 
             var pane = map.getContainer();
@@ -1825,18 +1931,24 @@ with tab_map:
             pane.appendChild(wrap);
         }}
 
-        /* ── 3. Attach once map is ready ── */
+        /* ── 4. Attach everything once map is ready ── */
         function attachToMap() {{
             var maps = [];
             try {{
                 maps = Object.values(window).filter(function(v) {{
-                    return v && typeof v.getZoom === 'function' && typeof v.eachLayer === 'function';
+                    return v && typeof v.getZoom === 'function' &&
+                           typeof v.eachLayer === 'function';
                 }});
             }} catch(e) {{}}
             if (!maps.length) return false;
             var map = maps[0];
             applyZoomVisibility(map);
-            if (!document.getElementById('map-search-wrap')) {{ buildSearchWidget(map); }}
+            if (!document.getElementById('map-activate-overlay')) {{
+                buildActivateOverlay(map);
+            }}
+            if (!document.getElementById('map-search-wrap')) {{
+                buildSearchWidget(map);
+            }}
             var _pending = false;
             map.on('zoomend', function() {{
                 if (_pending) return;
@@ -1846,6 +1958,7 @@ with tab_map:
             map.on('moveend', function() {{ applyZoomVisibility(map); }});
             return true;
         }}
+
         if (!attachToMap()) {{
             var obs = new MutationObserver(function(_, o) {{
                 if (attachToMap()) o.disconnect();
