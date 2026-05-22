@@ -1436,8 +1436,8 @@ with tab_map:
         _map_center   = [_fly["lat"], _fly["lon"]]
         _map_zoom     = 16   # bypass zoom-gate — school is immediately visible
     else:
-        _map_center   = [7.9465, -1.0232]
-        _map_zoom     = 7
+        _map_center   = [7.96, -1.02]   # Ghana geographic centre
+        _map_zoom     = 6.5              # zoom 6.5 fits full Ghana in the iframe
 
     m = folium.Map(
         location=_map_center,

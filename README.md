@@ -1,8 +1,21 @@
 # 🇬🇭 EduInfra Ghana — AI Infrastructure Gap Mapper
 
+[![Live App](https://img.shields.io/badge/🚀%20Live%20App-eduinfra--ghana.streamlit.app-FCD116?style=for-the-badge&labelColor=0e1117)](https://eduinfra-ghana.streamlit.app)
+[![Ghana AI Challenge 2026](https://img.shields.io/badge/Ghana%20AI%20Innovation%20Challenge-2026-006B3F?style=for-the-badge&labelColor=CF0921)](https://eduinfra-ghana.streamlit.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-white?style=for-the-badge)](LICENSE)
+
 > **"Data invisibility is the silent tax on the forgotten. EduInfra Ghana makes every school visible, every gap actionable."**
 
 **Ghana AI Innovation Challenge 2026 · Track: AI Infrastructure Gap Mapper · Brainhauz Solutions**
+
+---
+
+## 🚀 Try it live
+
+**[https://eduinfra-ghana.streamlit.app](https://eduinfra-ghana.streamlit.app)**
+
+> Open the app → select a region in the sidebar → explore 721 schools across all 7 intelligence tabs.
+> No login required. Works on desktop and mobile.
 
 ---
 
