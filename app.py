@@ -2664,6 +2664,63 @@ with tab_intel:
             """,
             unsafe_allow_html=True,
         )
+
+        # ── Scoring weights bar chart ────────────────────────────────────────────────────────────────────────
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-header">📐 Priority Scoring Model — Factor Weights</div>',
+            unsafe_allow_html=True,
+        )
+        _wdf = pd.DataFrame({
+            "Factor":  ["Poverty Index", "Literacy Gap", "No Electricity",
+                         "No Clean Water", "Poor Sanitation", "No Prior Aid"],
+            "Weight":  [30, 25, 20, 10, 10, 5],
+            "Source":  ["UNDP MPI 2023", "GSS Census 2021", "DHS Wave 8",
+                         "DHS Wave 8", "DHS Wave 8", "AidData 2023"],
+            "Color":   ["#CF0921", "#b38600", "#FCD116",
+                         "#1D9E75", "#006B3F", "#8B949E"],
+        })
+        _wfig = go.Figure(go.Bar(
+            x=_wdf["Weight"], y=_wdf["Factor"], orientation="h",
+            marker=dict(color=_wdf["Color"],
+                        line=dict(color="rgba(0,0,0,0.3)", width=1)),
+            text=[f"{w}%  ({s})" for w, s in zip(_wdf["Weight"], _wdf["Source"])],
+            textposition="outside",
+            textfont=dict(color="#C9D1D9", size=12),
+            hovertemplate="<b>%{y}</b><br>Weight: %{x}%<extra></extra>",
+        ))
+        _wfig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            xaxis=dict(title="Weight (%)", range=[0, 44],
+                       tickcolor="#8B949E", gridcolor="rgba(255,255,255,0.06)",
+                       title_font=dict(color="#8B949E"), tickfont=dict(color="#8B949E")),
+            yaxis=dict(tickcolor="#8B949E", tickfont=dict(color="#E6EDF3", size=12),
+                       autorange="reversed"),
+            margin=dict(l=0, r=180, t=10, b=40), height=260, showlegend=False,
+        )
+        st.plotly_chart(_wfig, use_container_width=True)
+
+        _tc1, _tc2, _tc3 = st.columns(3)
+        for _tcol, _tbg, _tborder, _tcolor, _tlabel, _tscore, _tcount in [
+            (_tc1, "rgba(207,9,33,0.12)",  "rgba(207,9,33,0.3)",  "#FF6B6B",
+             "Critical",     "Score &gt; 65%", "49 schools · 6.8%"),
+            (_tc2, "rgba(179,134,0,0.12)", "rgba(179,134,0,0.3)", "#FCD116",
+             "High Priority", "45% – 65%",     "189 schools · 26.2%"),
+            (_tc3, "rgba(0,107,63,0.12)",  "rgba(0,107,63,0.3)",  "#1D9E75",
+             "Stable",        "Score &lt; 45%", "483 schools · 67%"),
+        ]:
+            with _tcol:
+                st.markdown(
+                    f'<div style="background:{_tbg};border:1px solid {_tborder};'
+                    f'border-radius:8px;padding:12px 16px;text-align:center;">'
+                    f'<div style="font-size:0.7rem;color:#8B949E;letter-spacing:1px;'
+                    f'text-transform:uppercase;margin-bottom:4px;">{_tlabel}</div>'
+                    f'<div style="font-size:1.3rem;font-weight:800;color:{_tcolor};">{_tscore}</div>'
+                    f'<div style="font-size:0.75rem;color:#8B949E;margin-top:4px;">{_tcount}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
     # ── School selector — sorted by priority_score descending ────────────────────
     _sorted_schools = (
         _ranked
