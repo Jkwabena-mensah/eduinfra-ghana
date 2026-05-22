@@ -1678,7 +1678,7 @@ with tab_map:
                 sticky=False,
             ),
         )
-        mc.add_child(cm_marker)
+        _target_layer.add_child(cm_marker)
 
         # Collect heatmap data for critical/high schools
         if score > THRESHOLD_HIGH:
