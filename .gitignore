@@ -38,7 +38,6 @@ env/
 *.cpg
 
 # Models — ALLOW the two app pkl files (unblocked with !)
-# *.pkl  <-- removed so models/eduinfra_v1.pkl and v2.pkl are tracked
 !models/eduinfra_v1.pkl
 !models/eduinfra_v2.pkl
 
@@ -48,10 +47,11 @@ data/boundaries/
 data/electrification/
 data/poverty/
 
-# Allow key ranked/scored CSVs that the app needs at runtime
+# Allow key ranked/scored CSVs and border GeoJSON that the app needs at runtime
 !data/schools_priority_ranked.csv
 !data/clean/02_schools_scored.csv
 !data/clean/03_schools_corrected.csv
+!data/boundaries/gha_admin0_border.geojson
 
 # Logs
 logs/*.log
@@ -76,6 +76,18 @@ ghana_schools_master_2025.csv
 # Raw PDFs (large, not needed for app)
 2025-SECOND-CYCLE-SCHOOLS-REGISTER-NEW-FINAL-160525_for-approval-2.pdf
 SHSTVET_SCHOOLS.pdf
+
+# Patch scripts and backup files — session working files, not part of app
+_patch_history/
+*.py.bak
+*.py.*_bak
+app.py.bak
+app.py.css_bak
+apply_*.py
+fix_*.py
+remove_*.py
+rebuild_*.py
+restore_*.py
 
 # One-off utility scripts (keep clean)
 apply_final_fixes_v2.py
