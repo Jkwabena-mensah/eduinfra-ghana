@@ -1655,6 +1655,11 @@ with tab_map:
 </div>
         """
 
+        # Schools near eastern border (lon > 0.85) go directly on map —
+        # not into MarkerCluster, to prevent centroid drift outside border
+        _near_eastern_border = _lon > 0.85
+        _target_layer = m if _near_eastern_border else mc
+
         cm_marker = folium.CircleMarker(
             location=[row["latitude"], row["longitude"]],
             radius=radius,
