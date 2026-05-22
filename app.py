@@ -1467,7 +1467,7 @@ with tab_map:
     # ── Progressive Disclosure zoom threshold ──────────────────────────────
     # Markers only appear at zoom ≥ 9 (district level).  At national zoom the
     # map stays clean; a JS listener toggles the cluster layer visibility.
-    ZOOM_THRESHOLD = 9
+    ZOOM_THRESHOLD = 0  # Show markers at all zoom levels
 
     # ── MarkerCluster with spiderfy ──
     _mc_options = {
@@ -1480,10 +1480,20 @@ with tab_map:
     }
     mc = MarkerCluster(options=_mc_options, name="school_markers")
 
+    # Ghana national bounding box — filters out misplaced GPS centroids
+    _GH_LAT_MIN, _GH_LAT_MAX =  4.4,  11.4
+    _GH_LON_MIN, _GH_LON_MAX = -3.5,   1.4
+
     heatmap_data = []
     plotted = 0
     for _, row in top_df.iterrows():
         if pd.isna(row.get("latitude")) or pd.isna(row.get("longitude")):
+            continue
+        _lat, _lon = float(row["latitude"]), float(row["longitude"])
+        # Skip markers outside Ghana — they were GPS-corrected to district
+        # centroids but some centroids still fall slightly outside the border
+        if not (_GH_LAT_MIN <= _lat <= _GH_LAT_MAX and
+                _GH_LON_MIN <= _lon <= _GH_LON_MAX):
             continue
 
         score     = float(row["priority_score"])
@@ -2024,14 +2034,31 @@ with tab_map:
     # ── Layer 2 — MIDDLE: Soft gold neon halo ───────────────────────────────
     # Added BEFORE the crisp line so it renders beneath it (Leaflet z-order).
     # Uses GhanaColors.GOLD (wider, low-opacity) for the halo effect.
+    # ── Outer soft glow (wide, very transparent) ──
     folium.GeoJson(
         _ghana_geojson,
-        name="ghana_border_glow",
+        name="ghana_border_glow_outer",
         style_function=lambda _: {
             "fillColor": "none",
             "fillOpacity": 0.0,
-            "color": GhanaColors.GOLD,
-            "weight": 10,
+            "color": "#FCD116",
+            "weight": 18,
+            "opacity": 0.06,
+            "smoothFactor": 0,
+        },
+        interactive=False,
+        tooltip=None,
+    ).add_to(m)
+
+    # ── Mid glow ──
+    folium.GeoJson(
+        _ghana_geojson,
+        name="ghana_border_glow_mid",
+        style_function=lambda _: {
+            "fillColor": "none",
+            "fillOpacity": 0.0,
+            "color": "#FCD116",
+            "weight": 8,
             "opacity": 0.18,
             "smoothFactor": 0,
         },
@@ -2039,16 +2066,16 @@ with tab_map:
         tooltip=None,
     ).add_to(m)
 
-    # ── Layer 3 — TOP: Crisp sovereign border — smoothFactor=0 for pixel-perfect edges ──
+    # ── Crisp sovereign border — the actual visible line ──
     folium.GeoJson(
         _ghana_geojson,
         name="ghana_border_gold",
         style_function=lambda _: {
             "fillColor": "none",
             "fillOpacity": 0.0,
-            "color": GhanaColors.GOLD_BRIGHT,
-            "weight": 2,
-            "opacity": 0.92,
+            "color": "#FFD700",
+            "weight": 1.8,
+            "opacity": 0.95,
             "dashArray": None,
             "smoothFactor": 0,
             "lineJoin": "round",
