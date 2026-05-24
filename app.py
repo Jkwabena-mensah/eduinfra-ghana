@@ -2492,10 +2492,16 @@ with tab_cluster:
             )
             st.caption("UNESCO/GIZ indicative benchmarks — not procurement prices.")
 
-            _COST_SOLAR  = 45_000
-            _COST_WATER  = 28_000
-            _COST_SANIT  = 18_000
-            _FX          = 14  # GHS → USD
+            with st.expander("💰 Adjust Cost Assumptions (GH₵/school)", expanded=False):
+                _sc1, _sc2, _sc3 = st.columns(3)
+                with _sc1:
+                    _COST_SOLAR = st.slider("⚡ Solar/Grid", 50_000, 500_000, 45_000, 5_000)
+                with _sc2:
+                    _COST_WATER = st.slider("💧 Borehole/WASH", 10_000, 200_000, 28_000, 2_000)
+                with _sc3:
+                    _COST_SANIT = st.slider("🚽 Sanitation", 5_000, 100_000, 18_000, 1_000)
+                _FX = st.slider("💱 GH₵/USD Rate", 10, 20, 14, 1)
+                st.caption(f"All 3 per school: **GH₵{(_COST_SOLAR+_COST_WATER+_COST_SANIT):,}** ≈ **${(_COST_SOLAR+_COST_WATER+_COST_SANIT)//_FX:,}**")
 
             cost_rows = []
             for rank, (_, cl) in enumerate(cluster_df.iterrows(), 1):
