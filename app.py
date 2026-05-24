@@ -3420,8 +3420,14 @@ with tab_story:
 
         with _col_reg:
             if "region" in _story_df.columns:
+                # Normalise region names — deduplicate "North East" vs "North East Region"
+                _story_df_r = _story_df.copy()
+                _story_df_r["region"] = (
+                    _story_df_r["region"].str.strip().str.title()
+                    .str.replace(r"\s+Region$", "", regex=True)
+                )
                 _reg_avg = (
-                    _story_df.groupby("region")["priority_score"]
+                    _story_df_r.groupby("region")["priority_score"]
                     .mean()
                     .sort_values(ascending=True)
                 )
