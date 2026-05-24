@@ -3213,7 +3213,7 @@ with tab_sim:
             (_COST_SANIT    if _do_sanit else 0)
         )
         _result_df["est_cost_ghc"] = _cost_per_school
-        _result_df["est_cost_usd"] = (_cost_per_school / 14).round(0).astype(int)
+        _result_df["est_cost_usd"] = (_cost_per_school / _usd_rate).round(0).astype(int)
 
         if _grad_df.empty:
             st.info(
