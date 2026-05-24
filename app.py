@@ -693,6 +693,60 @@ st.markdown(
         color:#006B3F !important; border-bottom-color:#006B3F !important;
     }}
 
+    /* ── Floating AI Chat Button ── */
+    #edu-chat-fab {{
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 99998;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #006B3F, #1D9E75);
+        border: 2px solid rgba(252,209,22,0.4);
+        box-shadow: 0 4px 20px rgba(0,107,63,0.4), 0 0 0 0 rgba(29,158,117,0.3);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        animation: chatPulse 2.5s ease-in-out infinite;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }}
+    #edu-chat-fab:hover {{
+        transform: scale(1.12);
+        box-shadow: 0 6px 28px rgba(0,107,63,0.6), 0 0 0 6px rgba(29,158,117,0.15);
+    }}
+    @keyframes chatPulse {{
+        0%,100% {{ box-shadow: 0 4px 20px rgba(0,107,63,0.4), 0 0 0 0 rgba(29,158,117,0.3); }}
+        50%      {{ box-shadow: 0 4px 20px rgba(0,107,63,0.4), 0 0 0 8px rgba(29,158,117,0); }}
+    }}
+    #edu-chat-tooltip {{
+        position: fixed;
+        bottom: 88px;
+        right: 24px;
+        z-index: 99997;
+        background: rgba(14,17,23,0.95);
+        color: #E6EDF3;
+        font-family: Inter, Arial, sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 20px;
+        border: 1px solid rgba(252,209,22,0.3);
+        white-space: nowrap;
+        opacity: 0;
+        transform: translateY(4px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        pointer-events: none;
+        backdrop-filter: blur(10px);
+    }}
+    #edu-chat-fab:hover + #edu-chat-tooltip,
+    #edu-chat-fab:hover ~ #edu-chat-tooltip {{
+        opacity: 1;
+        transform: translateY(0);
+    }}
+
     /* ── Folium iframe UX — no scrollbars, no border ── */
     iframe[title="streamlit_folium.st_folium"] {{
         border: none !important;
@@ -3168,7 +3222,7 @@ with tab_sim:
             )
         else:
             _grad_df["est_cost_ghc"] = _cost_per_school
-            _grad_df["est_cost_usd"] = (_cost_per_school / 14).round(0).astype(int)
+            _grad_df["est_cost_usd"] = (_cost_per_school / _usd_rate).round(0).astype(int)
 
             # Colour helper
             _TIER_COLOURS = {
@@ -3207,7 +3261,7 @@ with tab_sim:
 
             # Total cost banner
             _total_cost_ghc = _cost_per_school * len(_grad_df)
-            _total_cost_usd = _total_cost_ghc // 14
+            _total_cost_usd = _total_cost_ghc // _usd_rate
             _sc1, _sc2, _sc3 = st.columns(3)
             _sc1.metric("Schools Graduating Tier", len(_grad_df))
             _sc2.metric("Total Cost (GH₵)", f"GH₵{_total_cost_ghc:,}")
