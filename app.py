@@ -2251,8 +2251,8 @@ with tab_cluster:
             # ── Cluster map ──
             with col_map:
                 cm = folium.Map(
-                    location=[7.9465, -1.0232],
-                    zoom_start=7,
+                    location=[7.5, -1.8],
+                    zoom_start=7.0,
                     tiles="CartoDB dark_matter",
                     max_bounds=False,
                     min_zoom=6,
