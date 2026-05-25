@@ -747,18 +747,35 @@ st.markdown(
         transform: translateY(0);
     }}
 
-    /* ── Folium iframe UX — no scrollbars, no border ── */
+    /* ── Folium iframe UX — no scrollbars, full pointer freedom ── */
     iframe[title="streamlit_folium.st_folium"] {{
         border: none !important;
         border-radius: 10px;
         display: block;
         overflow: hidden !important;
         cursor: grab !important;
+        touch-action: none !important;
+        -ms-touch-action: none !important;
     }}
-    iframe[title="streamlit_folium.st_folium"]:active {{ cursor: grabbing !important; }}
-    [data-testid="stIFrame"] {{ overflow: hidden !important; border-radius: 10px; }}
-    .stFolium, .element-container:has(iframe[title="streamlit_folium.st_folium"]) {{
-        overflow: hidden !important; border-radius: 10px;
+    iframe[title="streamlit_folium.st_folium"]:active {{
+        cursor: grabbing !important;
+    }}
+    /* Allow the iframe wrapper to receive all pointer events */
+    [data-testid="stIFrame"] {{
+        overflow: hidden !important;
+        border-radius: 10px;
+        touch-action: none !important;
+    }}
+    /* Prevent Streamlit's main block from intercepting horizontal scroll */
+    .stFolium,
+    .element-container:has(iframe[title="streamlit_folium.st_folium"]) {{
+        overflow: hidden !important;
+        border-radius: 10px;
+        touch-action: none !important;
+    }}
+    /* Prevent outer page scroll when mouse is over the map iframe */
+    .main .block-container:has(iframe[title="streamlit_folium.st_folium"]) {{
+        overscroll-behavior: contain;
     }}
 
     /* ── KPI card staggered entrance ── */
@@ -1836,7 +1853,7 @@ with tab_map:
 
             var hint = document.createElement('div');
             hint.className = 'map-hint';
-            hint.textContent = '🖱  Click to interact with map';
+            hint.textContent = '🖱  Click to interact · Scroll to zoom · Shift+Scroll to pan';
             overlay.appendChild(hint);
             container.appendChild(overlay);
 
@@ -1867,12 +1884,25 @@ with tab_map:
                 }}, 100);
             }});
 
-            // Ctrl+scroll always works regardless of activation state
+            // Ctrl+scroll = zoom; Shift+scroll = horizontal pan
             container.addEventListener('wheel', function(e) {{
                 if (e.ctrlKey || e.metaKey) {{
                     e.preventDefault();
                     var delta = e.deltaY > 0 ? -1 : 1;
                     map.setZoom(map.getZoom() + delta);
+                }} else if (e.shiftKey) {{
+                    // Shift+scroll pans horizontally
+                    e.preventDefault();
+                    var pan = e.deltaY > 0 ? [80, 0] : [-80, 0];
+                    map.panBy(pan, {{animate: true, duration: 0.25}});
+                }}
+            }}, {{ passive: false }});
+
+            // Forward horizontal trackpad scroll to map pan
+            container.addEventListener('wheel', function(e) {{
+                if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && !e.ctrlKey) {{
+                    e.preventDefault();
+                    map.panBy([e.deltaX * 1.5, 0], {{animate: false}});
                 }}
             }}, {{ passive: false }});
 
